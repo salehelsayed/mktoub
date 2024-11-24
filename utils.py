@@ -5,9 +5,51 @@ from typing import List, Dict, Any
 import markdown
 from config import DOCS_DIR, MARKDOWN_EXTENSIONS, IGNORED_PATTERNS, MARKDOWN_PATTERN
 
+class MermaidPreprocessor(markdown.preprocessors.Preprocessor):
+    """Preprocessor to protect Mermaid code blocks from being processed."""
+    
+    def run(self, lines):
+        new_lines = []
+        is_mermaid_block = False
+        mermaid_block = []
+        
+        for line in lines:
+            # Check for Mermaid code block start
+            if line.strip() == '```mermaid':
+                is_mermaid_block = True
+                mermaid_block = [line]
+            # Check for code block end
+            elif line.strip() == '```' and is_mermaid_block:
+                is_mermaid_block = False
+                mermaid_block.append(line)
+                # Create a div with mermaid class
+                mermaid_content = '\n'.join(mermaid_block[1:-1])
+                new_lines.append('<div class="mermaid">')
+                new_lines.append(mermaid_content)
+                new_lines.append('</div>')
+            # Inside Mermaid block
+            elif is_mermaid_block:
+                mermaid_block.append(line)
+            # Regular line
+            else:
+                new_lines.append(line)
+                
+        return new_lines
+
+class MermaidExtension(markdown.Extension):
+    """Markdown extension to handle Mermaid diagrams."""
+    
+    def extendMarkdown(self, md):
+        md.preprocessors.register(MermaidPreprocessor(md), 'mermaid', 175)
+
 class MarkdownProcessor:
+    """Process markdown content with support for Mermaid diagrams."""
+    
     def __init__(self):
-        self.md = markdown.Markdown(extensions=MARKDOWN_EXTENSIONS)
+        self.md = markdown.Markdown(extensions=[
+            *MARKDOWN_EXTENSIONS,
+            MermaidExtension()
+        ])
         
     def process_content(self, content: str, file_path: str) -> str:
         """Process markdown content and handle internal links."""
