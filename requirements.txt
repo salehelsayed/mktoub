@@ -1,0 +1,4 @@
+flask==2.3.3
+markdown==3.4.4
+python-frontmatter==1.0.0
+pygments==2.16.1
